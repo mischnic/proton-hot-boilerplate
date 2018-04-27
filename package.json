@@ -1,0 +1,27 @@
+{
+	"name": "proton-hot-boilerplate",
+	"author": "Niklas Mischkulnig",
+	"license": "Unlicense",
+	"version": "0.0.0",
+	"main": "index.js",
+	"scripts": {
+		"start": "babel-node index.js",
+		"dev": "node-hot --fork"
+	},
+	"dependencies": {
+		"proton-native": "*",
+		"react": "^16.3.2"
+	},
+	"devDependencies": {
+		"babel-cli": "^6.26.0",
+		"babel-core": "^6.26.3",
+		"babel-loader": "^7.1.4",
+		"babel-preset-env": "^1.6.1",
+		"babel-preset-react": "^6.24.1",
+		"babel-preset-stage-0": "^6.24.1",
+		"node-hot-loader": "^1.8.2",
+		"react-hot-loader": "^4.1.2",
+		"webpack": "^4.6.0",
+		"webpack-node-externals": "^1.7.2"
+	}
+}
