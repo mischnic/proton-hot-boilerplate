@@ -1,24 +1,24 @@
 import React from 'react';
 import { AppContainer } from 'react-hot-loader'
-import { render } from 'proton-native';
-import App from './app.js';
+import { App, render } from 'proton-native';
+import Notepad from './app.js';
 
 const update = Component => {
   render(
     <AppContainer>
-      <Component />
+      <App>
+        <Component />
+      </App>
     </AppContainer>
   );
 }
 
-update(App)
-
+update(Notepad);
 
 if (module.hot) {
   module.hot.accept('./app.js', () => {
-    // if you are using harmony modules ({modules:false})
-    update(App);
-    // in all other cases - re-require App manually
-    // update(require('./containers/App'))
+    import("./app.js").then(x => {
+      update(x.default);
+    });
   })
 }

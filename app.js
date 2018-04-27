@@ -8,58 +8,28 @@ import {
   Dialog,
   Menu,
   Box,
+  Button
 } from 'proton-native';
 
 class Notepad extends Component {
-  state = { text: '' };
-
-  save() {
-    const filename = Dialog('Save');
-    fs.writeFileSync(filename, this.state.text);
-  }
-
-  open() {
-    const filename = Dialog('Open');
-    if (filename) {
-      let data = fs.readFileSync(filename);
-      this.setState({ text: data });
-    }
-  }
-
-  shouldComponentUpdate(nextProps, nextState) {
-    if (typeof nextState.text === 'string')
-      return false; // nextState is set from input
-    else return true; // nextState is set from file
-  }
+  state = { running: true, text: 'Enter here!' };
 
   render() {
+    console.log(this.state.running);
     return (
-      <App onShouldQuit={() => console.log('Quitting')}>
-        <Menu label="File">
-          <Menu.Item type="Item" onClick={() => this.open()}>
-            Open
-          </Menu.Item>
-          <Menu.Item type="Item" onClick={() => this.save()}>
-            Save
-          </Menu.Item>
-          <Menu.Item type="Quit" />
-        </Menu>
-        <Window
-          onClose={() => console.log('Closing')}
+        this.state.running && <Window
           title="Notes"
           size={{ w: 500, h: 500 }}
-          margined={true}
         >
           <Box>
             <TextInput
               onChange={text => this.setState({ text })}
-              multiline={true}
             >
               {this.state.text}
             </TextInput>
+            <Button onClick={()=>this.setState({running: false})}>Test</Button>
           </Box>
         </Window>
-      </App>
     );
   }
 }
