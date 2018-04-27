@@ -12,12 +12,11 @@ import {
 } from 'proton-native';
 
 class Notepad extends Component {
-  state = { running: true, text: 'Enter here!' };
+  state = { text: 'Enter here!' };
 
   render() {
-    console.log(this.state.running);
     return (
-        this.state.running && <Window
+        <Window
           title="Notes"
           size={{ w: 500, h: 500 }}
         >
@@ -27,7 +26,7 @@ class Notepad extends Component {
             >
               {this.state.text}
             </TextInput>
-            <Button onClick={()=>this.setState({running: false})}>Test</Button>
+            <Button>Test</Button>
           </Box>
         </Window>
     );

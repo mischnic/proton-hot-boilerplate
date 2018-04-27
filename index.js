@@ -1,24 +1,30 @@
-import React from 'react';
-import { AppContainer } from 'react-hot-loader'
+import React, {Component} from 'react';
 import { App, render } from 'proton-native';
-import Notepad from './app.js';
+import MyApp from './app.js';
 
-const update = Component => {
-  render(
-    <AppContainer>
+class HotApp extends Component {
+  constructor(props){
+    super(props);
+
+    this.state = {app: MyApp};
+
+    if(module.hot) {
+      module.hot.accept('./app.js', () => {
+        import("./app.js").then(x => {
+          this.setState({app: x.default})
+        });
+      })
+    }
+  }
+
+  render() {
+    const Component = this.state.app;
+    return (
       <App>
-        <Component />
+        <Component/>
       </App>
-    </AppContainer>
-  );
+    );
+  }
 }
 
-update(Notepad);
-
-if (module.hot) {
-  module.hot.accept('./app.js', () => {
-    import("./app.js").then(x => {
-      update(x.default);
-    });
-  })
-}
+render(<HotApp/>);
