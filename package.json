@@ -6,7 +6,8 @@
 	"main": "index.js",
 	"scripts": {
 		"start": "babel-node index.js",
-		"dev": "node-hot --fork"
+		"dev": "node-hot --fork",
+		"lint": "prettier --use-tabs --tab-width=4 --write app.js index.js"
 	},
 	"dependencies": {
 		"proton-native": "*",
@@ -20,6 +21,7 @@
 		"babel-preset-react": "^6.24.1",
 		"babel-preset-stage-0": "^6.24.1",
 		"node-hot-loader": "^1.8.2",
+		"prettier": "^1.12.1",
 		"react-hot-loader": "^4.1.2",
 		"webpack": "^4.6.0",
 		"webpack-node-externals": "^1.7.2"
