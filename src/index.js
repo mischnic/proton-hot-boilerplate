@@ -1,28 +1,31 @@
 import React, { Component } from "react";
 import { App, Window, render } from "proton-native";
 import MyApp from "./app.js";
+import { createProxy, getForceUpdate } from "react-proxy";
+
+const proxy = createProxy(MyApp);
+const Proxy = proxy.get();
 
 class HotApp extends Component {
 	constructor(props) {
 		super(props);
 
-		this.state = { app: MyApp };
-
 		if (module.hot) {
 			module.hot.accept("./app.js", () => {
 				import("./app.js").then(x => {
-					this.setState({ app: x.default });
+					const mountedInstances = proxy.update(x.default);
+					const forceUpdate = getForceUpdate(React);
+					mountedInstances.forEach(forceUpdate);
 				});
 			});
 		}
 	}
 
 	render() {
-		const Component = this.state.app;
 		return (
 			<App>
-				<Window title="Notes" size={{ w: 500, h: 500 }}>
-					<Component />
+				<Window title="Notes" size={{ w: 500, h: 350 }} margined>
+					<Proxy />
 				</Window>
 			</App>
 		);

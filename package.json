@@ -5,9 +5,10 @@
 	"version": "0.0.0",
 	"main": "index.js",
 	"scripts": {
-		"start": "babel-node index.js",
+		"start": "babel-node src/index.js",
+		"build": "babel -d dist src",
 		"dev": "node-hot --fork",
-		"lint": "prettier --use-tabs --tab-width=4 --write app.js index.js"
+		"lint": "prettier --use-tabs --tab-width=4 --write src/*.js"
 	},
 	"dependencies": {
 		"proton-native": "*",
@@ -23,6 +24,7 @@
 		"node-hot-loader": "^1.8.2",
 		"prettier": "^1.12.1",
 		"react-hot-loader": "^4.1.2",
+		"react-proxy": "^1.1.8",
 		"webpack": "^4.6.0",
 		"webpack-node-externals": "^1.7.2"
 	}
