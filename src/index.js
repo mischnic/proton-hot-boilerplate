@@ -9,7 +9,7 @@ class HotApp extends Component {
 				<Window title="Notes" size={{ w: 500, h: 350 }} margined>
 					<Box padded>
 						<MyApp />
-						<Test />
+						<Test text={{ x: "!!!" }} />
 					</Box>
 				</Window>
 			</App>

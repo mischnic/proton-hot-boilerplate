@@ -1,15 +1,13 @@
-# Hot Reloading for proton-native
-
-**WIP**
+# Hot Reloading for [proton-native](https://github.com/kusti8/proton-native)
 
 ```sh
 git clone https://github.com/mischnic/proton-hot-boilerplate
 cd proton-hot-boilerplate
 yarn # or npm i
-yarn dev # or npm run-script dev
+yarn dev # or npm run dev
 ```
 
-## Current problems
+## Issues
 
-- How to individual components instead of only files
-- The Windows position resets if reloaded
+- Reloading `index.js` (the main script) doesn't work
+- The Windows position resets if reloaded (can't be fixed)
