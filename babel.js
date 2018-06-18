@@ -85,17 +85,20 @@ const ID = (function() {
 
 	const isReactComp = (file, name) => file[REACT_COMPS].findIndex(v => v.name === name) !== -1;
 
-	const couldBeFunctional = (scope, name) => {
+	const couldBeFunctionalComponent = (scopeOrPath, name, checkType = true) => {
 		let found = false;
-		const p = scope.getBinding(name).path;
-		if (
-			!t.isFunctionDeclaration(p.node) &&
-			!(
-				t.isVariableDeclarator(p.node) &&
-				(t.isFunctionExpression(p.node.init) || t.isArrowFunctionExpression(p.node.init))
-			)
-		) {
-			return false;
+		const p = name ? scopeOrPath.getBinding(name).path : scopeOrPath;
+
+		if(checkType){
+			if (
+				!t.isFunctionDeclaration(p.node) &&
+				!(
+					t.isVariableDeclarator(p.node) &&
+					(t.isFunctionExpression(p.node.init) || t.isArrowFunctionExpression(p.node.init))
+				)
+			) {
+				return false;
+			}
 		}
 
 		const x = p.traverse({
@@ -119,6 +122,53 @@ const ID = (function() {
 		return found;
 	};
 
+	const functionToClass = (name, declaration, body, params, type = "ClassDeclaration") => {
+		if (params[0]) {
+			// props
+			const propName = params[0].name;
+			if (t.isFunctionDeclaration(declaration.node)) {
+				declaration.scope.rename(propName, "this.props");
+			} else {
+				declaration.traverse({
+					MemberExpression(path, opts) {
+						const node = path.node;
+						path.skip();
+
+						let x = node;
+						let partList = [];
+						while (x.object) {
+							if (x.object.name) {
+								if (x.object.name == propName) {
+									x.object = t.memberExpression(
+										t.thisExpression(),
+										t.identifier(x.object.name)
+									);
+								}
+								break;
+							}
+							x = x.object;
+						}
+					}
+				});
+			}
+		}
+
+		return {
+			type,
+			id: t.identifier(name),
+			superClass: t.memberExpression(t.identifier("React"), t.identifier("Component")),
+			body: t.classBody([
+				t.classMethod(
+					"method",
+					t.identifier("render"),
+					[],
+					// handle arrow function
+					!t.isBlockStatement(body) ? t.blockStatement([t.returnStatement(body)]) : body
+				)
+			])
+		};
+	};
+
 	return {
 		visitor: {
 			ExportDefaultDeclaration(path, { file }) {
@@ -128,6 +178,17 @@ const ID = (function() {
 					isReactComp(file, path.node.declaration.name)
 				) {
 					path.node.declaration = exportComponent(path.node.declaration);
+				} else {
+					if (couldBeFunctionalComponent(path, null, false)) {
+						const { body, params } = path.node.declaration;
+						path.node.declaration = exportComponent(functionToClass(
+							"Test",
+							path,
+							body,
+							params,
+							"ClassExpression"
+						));
+					}
 				}
 			},
 			ExportNamedDeclaration(path, { file }) {
@@ -137,65 +198,17 @@ const ID = (function() {
 						const newId = path.scope.generateUidIdentifier(s.local.name);
 						let result;
 						if (!isReactComp(file, s.local.name)) {
-							if (couldBeFunctional(path.scope, s.local.name)) {
+							if (couldBeFunctionalComponent(path.scope, s.local.name)) {
 								// rewrite stateless into React.Component subclass
 								const declaration = path.scope.getBinding(s.local.name).path;
 								const body = declaration.node.body || declaration.node.init.body;
 								const params =
 									declaration.node.params || declaration.node.init.params;
 
-								if (params[0]) {
-									// props
-									const propName = params[0].name;
-									if (t.isFunctionDeclaration(declaration)) {
-										declaration.scope.rename(propName, "this.props");
-									} else {
-										declaration.traverse({
-											MemberExpression(path, opts) {
-												const node = path.node;
-												path.skip();
-
-												let x = node;
-												let partList = [];
-												while (x.object) {
-													if (x.object.name) {
-														if (x.object.name == propName) {
-															x.object = t.memberExpression(
-																t.thisExpression(),
-																t.identifier(x.object.name)
-															);
-														}
-														break;
-													}
-													x = x.object;
-												}
-											}
-										});
-									}
-								}
-
 								(t.isFunctionDeclaration(declaration.node)
 									? declaration
 									: declaration.parentPath
-								).replaceWith({
-									type: "ClassDeclaration",
-									id: t.identifier(exported),
-									superClass: t.memberExpression(
-										t.identifier("React"),
-										t.identifier("Component")
-									),
-									body: t.classBody([
-										t.classMethod(
-											"method",
-											t.identifier("render"),
-											[],
-											// handle arrow function
-											t.isCallExpression(body)
-												? t.blockStatement([t.returnStatement(body)])
-												: body
-										)
-									])
-								});
+								).replaceWith(functionToClass(exported, declaration, body, params));
 							} else {
 								continue;
 							}

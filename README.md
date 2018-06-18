@@ -11,3 +11,4 @@ yarn dev # or npm run dev
 
 - Reloading `index.js` (the main script) doesn't work
 - The Windows position resets if reloaded (can't be fixed)
+- There should really be a test for every edge case

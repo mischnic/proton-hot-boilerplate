@@ -6,13 +6,15 @@ class Example extends Component {
 		return (
 			<Box padded>
 				<TextInput />
-				<Text>Tester</Text>
+				<Text>Test</Text>
 			</Box>
 		);
 	}
 }
 
+// function Test(props){return <Text>{props.text.x}</Text>};
 const Test = props => <Text>{props.text.x}</Text>;
 
-export default Example;
-export { Test };
+export default (props) => <Text>{props.val}</Text>;
+// export default function(props){return <Text>{props.val}</Text>};
+export { Example, Test };
