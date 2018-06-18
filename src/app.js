@@ -1,15 +1,5 @@
 import React, { Component } from "react";
-import {
-	render,
-	Window,
-	App,
-	Box,
-	Button,
-	Slider,
-	TextInput,
-	Text,
-	Separator
-} from "proton-native";
+import { Box, TextInput, Text } from "proton-native";
 
 class Example extends Component {
 	render() {
@@ -22,4 +12,7 @@ class Example extends Component {
 	}
 }
 
+const Test = () => <Text>Hello!</Text>;
+
 export default Example;
+export { Test };
