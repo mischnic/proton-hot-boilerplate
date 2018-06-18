@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { App, Window, render, Box } from "proton-native";
-import MyApp, {Test} from "./app.js";
+import MyApp, { Test } from "./app.js";
 
 class HotApp extends Component {
 	render() {
@@ -9,7 +9,7 @@ class HotApp extends Component {
 				<Window title="Notes" size={{ w: 500, h: 350 }} margined>
 					<Box padded>
 						<MyApp />
-						<Test/>
+						<Test />
 					</Box>
 				</Window>
 			</App>

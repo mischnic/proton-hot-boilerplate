@@ -26,19 +26,16 @@ if (process.env.NODE_ENV !== "production") {
 
 		const proxyTemplate = template(
 			`const ID = (function() {
-	if (IMPORTID.___component) {
+	if (IMPORTID && IMPORTID.___component) {
 		const proxy = createProxy(IMPORTID.___component);
-		if (module.hot) {
-			module.hot.accept(IMPORT, function() {
-				const x = require(IMPORT)[NAME];
-				console.log(IMPORT, NAME);
-				const mountedInstances = proxy.update(
-					x.___component
-				);
-				const forceUpdate = getForceUpdate(React);
-				mountedInstances.forEach(forceUpdate);
-			});
-		}
+		HOT.accept(require.resolve(IMPORT), function() {
+			const x = require(IMPORT)[NAME];
+			const mountedInstances = proxy.update(
+				x.___component
+			);
+			const forceUpdate = getForceUpdate(React);
+			mountedInstances.forEach(forceUpdate);
+		});
 		return proxy.get();
 	} else {
 		return IMPORTID;
@@ -46,6 +43,42 @@ if (process.env.NODE_ENV !== "production") {
 })();`,
 			templateOptions
 		);
+
+		const hotTemplate = template(
+			`
+const ID = (function() {
+	if (module.hot) {
+		const data = {};
+
+		return {
+			accept(file, cb) {
+				if (!data[file]) data[file] = [];
+				data[file].push(cb);
+			},
+			run() {
+				for (let file of Object.keys(data)) {
+					module.hot.accept(file, function() {
+						for (let cb of data[file]) {
+							cb(file);
+						}
+					});
+				}
+			}
+		};
+	} else {
+		return {
+			accept() {},
+			run() {}
+		};
+	}
+})();
+`,
+			templateOptions
+		);
+
+		const runHotTemplate = template(`ID.run();`, templateOptions);
+
+		const MODULE_HOT = Symbol("module.hot");
 
 		return {
 			visitor: {
@@ -74,19 +107,21 @@ if (process.env.NODE_ENV !== "production") {
 						s.exported = t.identifier(exported);
 					}
 				},
-				ImportDeclaration(path, opts) {
+				ImportDeclaration(path, { file }) {
 					if (path.node.source.value.match(shouldDoImport)) {
 						for (let s of path.node.specifiers) {
 							const oldId = s.local.name;
+							const name = t.isImportDefaultSpecifier(s)
+								? "default"
+								: s.local.name;
+
 							s.local = path.scope.generateUidIdentifierBasedOnNode(
 								s.local
 							);
 
-							const name = t.isImportDefaultSpecifier(s)
-								? "default"
-								: s.local.name;
 							path.insertAfter(
 								proxyTemplate({
+									HOT: file[MODULE_HOT],
 									ID: t.identifier(oldId),
 									NAME: t.stringLiteral(name),
 									IMPORTID: s.local,
@@ -103,6 +138,17 @@ if (process.env.NODE_ENV !== "production") {
 						if (!shouldIgnoreFile(file.opts.filename)) {
 							node.body.unshift(headerTemplate());
 						}
+						file[MODULE_HOT] = scope.generateUidIdentifier(
+							"module_hot"
+						);
+						node.body.unshift(
+							hotTemplate({ ID: file[MODULE_HOT] })
+						);
+					},
+					exit({ node }, { file }) {
+						node.body.push(
+							runHotTemplate({ ID: file[MODULE_HOT] })
+						);
 					}
 				},
 				Class(classPath, x) {}

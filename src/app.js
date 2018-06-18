@@ -6,13 +6,17 @@ class Example extends Component {
 		return (
 			<Box padded>
 				<TextInput />
-				<Text>Test</Text>
+				<Text>Test!</Text>
 			</Box>
 		);
 	}
 }
 
-const Test = () => <Text>Hello!</Text>;
+class Test extends Component {
+	render() {
+		return <Text>Hello</Text>;
+	}
+}
 
 export default Example;
 export { Test };
