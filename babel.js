@@ -80,6 +80,17 @@ const ID = (function() {
 
 	const runHotTemplate = template(`ID.run();`, templateOptions);
 
+	// 	const renderTemplate = template(
+	// 		`(function(){
+	// render(COMPONENT);
+	// if(module.hot){
+	// 	module.hot.accept();
+	// }
+
+	// })();`,
+	// 		templateOptions
+	// 	);
+
 	const MODULE_HOT = Symbol("module.hot");
 	const REACT_COMPS = Symbol("react component");
 
@@ -89,12 +100,13 @@ const ID = (function() {
 		let found = false;
 		const p = name ? scopeOrPath.getBinding(name).path : scopeOrPath;
 
-		if(checkType){
+		if (checkType) {
 			if (
 				!t.isFunctionDeclaration(p.node) &&
 				!(
 					t.isVariableDeclarator(p.node) &&
-					(t.isFunctionExpression(p.node.init) || t.isArrowFunctionExpression(p.node.init))
+					(t.isFunctionExpression(p.node.init) ||
+						t.isArrowFunctionExpression(p.node.init))
 				)
 			) {
 				return false;
@@ -181,13 +193,9 @@ const ID = (function() {
 				} else {
 					if (couldBeFunctionalComponent(path, null, false)) {
 						const { body, params } = path.node.declaration;
-						path.node.declaration = exportComponent(functionToClass(
-							"Test",
-							path,
-							body,
-							params,
-							"ClassExpression"
-						));
+						path.node.declaration = exportComponent(
+							functionToClass("Test", path, body, params, "ClassExpression")
+						);
 					}
 				}
 			},
@@ -255,18 +263,38 @@ const ID = (function() {
 						file[REACT_COMPS] = [];
 					}
 				},
-				exit({ node }, { file }) {
+				exit(path, { file }) {
+					// path.traverse({
+					// 	CallExpression(path, opts) {
+					// 		// patch the top-level render call
+					// 		if (path.node.callee.name === "render") {
+					// 			path.replaceWith(
+					// 				renderTemplate({ COMPONENT: path.node.arguments[0] })
+					// 			);
+					// 			path.stop();
+					// 		}
+					// 	}
+					// });
 					if (!shouldIgnoreFile(file.opts.filename)) {
-						node.body.push(runHotTemplate({ ID: file[MODULE_HOT] }));
+						path.node.body.push(runHotTemplate({ ID: file[MODULE_HOT] }));
 					}
 				}
 			},
 			ClassDeclaration({ node, scope }, { file }) {
-				const superClass = scope.getBinding(node.superClass.name);
-				if (
-					superClass &&
-					t.isImportDeclaration(superClass.path.parent) &&
-					superClass.path.parent.source.value == "react"
+				// Maintain a list of React.Component subclasses
+				if (t.isIdentifier(node.superClass)) {
+					const superClass = scope.getBinding(node.superClass.name);
+					if (
+						superClass &&
+						t.isImportDeclaration(superClass.path.parent) &&
+						superClass.path.parent.source.value == "react"
+					) {
+						file[REACT_COMPS].push(node.id);
+					}
+				} else if (
+					t.isMemberExpression(node.superClass) &&
+					node.superClass.object.name === "React" &&
+					node.superClass.property.name === "Component"
 				) {
 					file[REACT_COMPS].push(node.id);
 				}

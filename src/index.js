@@ -8,9 +8,9 @@ class HotApp extends Component {
 			<App>
 				<Window title="Notes" size={{ w: 500, h: 350 }} margined>
 					<Box padded>
-						<Example/>
-						<MyApp val={10}/>
-						<Test text={{ x: "!!!" }} />
+						<Example />
+						<MyApp val={10} />
+						<Test text={{ x: "???" }} />
 					</Box>
 				</Window>
 			</App>
