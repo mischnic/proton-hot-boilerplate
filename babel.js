@@ -1,4 +1,3 @@
-// if (process.env.NODE_ENV !== "production") {
 const templateOptions = {
 	placeholderPattern: /^([A-Z0-9]+)([A-Z0-9_]+)$/
 };
@@ -302,4 +301,3 @@ const ID = (function() {
 		}
 	};
 };
-// }

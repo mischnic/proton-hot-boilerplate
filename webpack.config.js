@@ -1,6 +1,10 @@
 const path = require('path');
 const nodeExternals = require('webpack-node-externals');
 
+const babelrc = JSON.parse(require("fs").readFileSync(".babelrc"));
+babelrc.plugins = babelrc.plugins || [];
+babelrc.plugins.push("../babel.js");
+
 module.exports = {
   entry: {
     main: './src/index.js',
@@ -17,7 +21,10 @@ module.exports = {
       {
         test: /\.js$/,
         exclude: /node_modules/,
-        use: ['babel-loader']
+        use: {
+          loader: 'babel-loader',
+          options: babelrc
+        }
       }
     ]
   },
