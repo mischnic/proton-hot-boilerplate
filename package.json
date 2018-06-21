@@ -11,7 +11,7 @@
 		"lint": "prettier --use-tabs --tab-width=4 --print-width=100 --write src/*.js babel.js"
 	},
 	"dependencies": {
-		"proton-native": "*",
+		"proton-native": "^1.1.8",
 		"react": "^16.3.2"
 	},
 	"devDependencies": {
@@ -23,7 +23,6 @@
 		"babel-preset-stage-0": "^6.24.1",
 		"node-hot-loader": "^1.8.2",
 		"prettier": "^1.12.1",
-		"react-hot-loader": "^4.1.2",
 		"react-proxy": "^1.1.8",
 		"webpack": "^4.6.0",
 		"webpack-node-externals": "^1.7.2"
