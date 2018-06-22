@@ -3,7 +3,7 @@ const nodeExternals = require('webpack-node-externals');
 
 const babelrc = JSON.parse(require("fs").readFileSync(".babelrc"));
 babelrc.plugins = babelrc.plugins || [];
-babelrc.plugins.push("../babel.js");
+babelrc.plugins.push(path.join(__dirname, 'babel.js'),);
 
 module.exports = {
   entry: {
@@ -33,6 +33,8 @@ module.exports = {
     path: path.join(__dirname, 'build'),
     filename: 'bundle.js',
   },
+
+  stats: 'minimal',
 
   target: 'node',
   mode: 'development',
