@@ -15,15 +15,16 @@ module.exports = function plugin(args) {
 		throw new Error();
 	}
 	const { types: t, template } = args;
+	// TODO fix double import ?
 	const headerTemplate = template(
 		`const { createProxy, getForceUpdate } = require("react-proxy");`,
 		templateOptions
 	);
 	const shouldDoImport = /^\.?\.\//;
-	const exportComponent = id =>
+	const componentToExportTemplate = id =>
 		t.objectExpression([t.objectProperty(t.identifier("___component"), id)]);
 
-	const proxyTemplate = template(
+	const importProxyTemplate = template(
 		`const ID = (function() {
 	if (IMPORTID && IMPORTID.___component) {
 		const proxy = createProxy(IMPORTID.___component);
@@ -43,7 +44,7 @@ module.exports = function plugin(args) {
 		templateOptions
 	);
 
-	const hotTemplate = template(
+	const hotWrapperTemplate = template(
 		`
 const ID = (function() {
 	if (module.hot) {
@@ -77,7 +78,7 @@ const ID = (function() {
 		templateOptions
 	);
 
-	const runHotTemplate = template(`ID.run();`, templateOptions);
+	const hotWrapperRunTemplate = template(`ID.run();`, templateOptions);
 
 	// 	const renderTemplate = template(
 	// 		`(function(){
@@ -90,8 +91,8 @@ const ID = (function() {
 	// 		templateOptions
 	// 	);
 
-	const MODULE_HOT = Symbol("module.hot");
-	const REACT_COMPS = Symbol("react component");
+	const MODULE_HOT = Symbol("Wrapper(module.hot)");
+	const REACT_COMPS = Symbol("React Components");
 
 	const isReactComp = (file, name) => file[REACT_COMPS].findIndex(v => v.name === name) !== -1;
 
@@ -188,11 +189,11 @@ const ID = (function() {
 					isUpperCase(path.node.declaration.name) &&
 					isReactComp(file, path.node.declaration.name)
 				) {
-					path.node.declaration = exportComponent(path.node.declaration);
+					path.node.declaration = componentToExportTemplate(path.node.declaration);
 				} else {
 					if (couldBeFunctionalComponent(path, null, false)) {
 						const { body, params } = path.node.declaration;
-						path.node.declaration = exportComponent(
+						path.node.declaration = componentToExportTemplate(
 							functionToClass("Test", path, body, params, "ClassExpression")
 						);
 					}
@@ -222,7 +223,7 @@ const ID = (function() {
 						}
 
 						result = t.variableDeclaration("const", [
-							t.variableDeclarator(newId, exportComponent(s.local))
+							t.variableDeclarator(newId, componentToExportTemplate(s.local))
 						]);
 
 						s.local = newId;
@@ -240,7 +241,7 @@ const ID = (function() {
 						s.local = path.scope.generateUidIdentifierBasedOnNode(s.local);
 
 						path.insertAfter(
-							proxyTemplate({
+							importProxyTemplate({
 								HOT: file[MODULE_HOT],
 								ID: t.identifier(oldId),
 								NAME: t.stringLiteral(name),
@@ -257,7 +258,7 @@ const ID = (function() {
 						node.body.unshift(headerTemplate());
 
 						file[MODULE_HOT] = scope.generateUidIdentifier("module_hot");
-						node.body.unshift(hotTemplate({ ID: file[MODULE_HOT] }));
+						node.body.unshift(hotWrapperTemplate({ ID: file[MODULE_HOT] }));
 
 						file[REACT_COMPS] = [];
 					}
@@ -275,25 +276,31 @@ const ID = (function() {
 					// 	}
 					// });
 					if (!shouldIgnoreFile(file.opts.filename)) {
-						path.node.body.push(runHotTemplate({ ID: file[MODULE_HOT] }));
+						path.node.body.push(hotWrapperRunTemplate({ ID: file[MODULE_HOT] }));
 					}
 				}
 			},
 			ClassDeclaration({ node, scope }, { file }) {
 				// Maintain a list of React.Component subclasses
 				if (t.isIdentifier(node.superClass)) {
+					// extends Component
 					const superClass = scope.getBinding(node.superClass.name);
 					if (
 						superClass &&
 						t.isImportDeclaration(superClass.path.parent) &&
-						superClass.path.parent.source.value == "react"
+						superClass.path.parent.source.value.toLowerCase() == "react" &&
+						(superClass.path.node.imported.name === "Component" ||
+							superClass.path.node.imported.name === "PureComponent")
 					) {
 						file[REACT_COMPS].push(node.id);
 					}
 				} else if (
+					// extends React.Component
 					t.isMemberExpression(node.superClass) &&
-					node.superClass.object.name === "React" &&
-					node.superClass.property.name === "Component"
+					// TODO better react detection
+					node.superClass.object.name.toLowerCase() === "react" &&
+					(node.superClass.property.name === "Component" ||
+						node.superClass.property.name === "Pure.Component")
 				) {
 					file[REACT_COMPS].push(node.id);
 				}

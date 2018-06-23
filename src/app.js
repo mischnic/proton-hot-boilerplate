@@ -1,7 +1,7 @@
-import React, { Component } from "react";
+import React, { Component, PureComponent } from "React";
 import { Box, TextInput, Text } from "proton-native";
 
-class Example extends Component {
+class Example extends PureComponent {
 	render() {
 		return (
 			<Box padded>
@@ -15,6 +15,6 @@ class Example extends Component {
 // function Test(props){return <Text>{props.text.x}</Text>};
 const Test = props => <Text>{props.text.x}</Text>;
 
-export default props => <Text>{String(props.val)}</Text>;
+export default props => <Text>{`${props.val}`}</Text>;
 // export default function(props){return <Text>{props.val}</Text>};
 export { Example, Test };
