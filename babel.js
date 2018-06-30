@@ -21,9 +21,13 @@ module.exports = function plugin(args) {
 		templateOptions
 	);
 	const shouldDoImport = /^\.?\.\//;
+	// @returns {
+	//		___component: id
+	//	}
 	const componentToExportTemplate = id =>
 		t.objectExpression([t.objectProperty(t.identifier("___component"), id)]);
 
+	// replace import with a proxy if ___component is present
 	const importProxyTemplate = template(
 		`const ID = (function() {
 	if (IMPORTID && IMPORTID.___component) {
@@ -44,6 +48,7 @@ module.exports = function plugin(args) {
 		templateOptions
 	);
 
+	// Wrapper for module.hot to support multiple module.hot.accept calls for the same file
 	const hotWrapperTemplate = template(
 		`
 const ID = (function() {
@@ -78,22 +83,27 @@ const ID = (function() {
 		templateOptions
 	);
 
+	// Run the hot wrapper
 	const hotWrapperRunTemplate = template(`ID.run();`, templateOptions);
 
-	// 	const renderTemplate = template(
-	// 		`(function(){
-	// render(COMPONENT);
-	// if(module.hot){
-	// 	module.hot.accept();
-	// }
+	/* 	
+	const renderTemplate = template(
+			`(function(){
+	render(COMPONENT);
+	if(module.hot){
+		module.hot.accept();
+	}
 
-	// })();`,
-	// 		templateOptions
-	// 	);
+	})();`,
+			templateOptions
+		);
+	*/
 
+	// Keys to keep information on file object
 	const MODULE_HOT = Symbol("Wrapper(module.hot)");
 	const REACT_COMPS = Symbol("React Components");
 
+	// Have we seen this class name as a Component declaration already?
 	const isReactComp = (file, name) => file[REACT_COMPS].findIndex(v => v.name === name) !== -1;
 
 	const couldBeFunctionalComponent = (scopeOrPath, name, checkType = true) => {
@@ -134,6 +144,7 @@ const ID = (function() {
 		return found;
 	};
 
+	// Turn a functional component into a class component
 	const functionToClass = (name, declaration, body, params, type = "ClassDeclaration") => {
 		if (params[0]) {
 			// props
@@ -168,13 +179,14 @@ const ID = (function() {
 		return {
 			type,
 			id: t.identifier(name),
+			// TODO PureComponent?
 			superClass: t.memberExpression(t.identifier("React"), t.identifier("Component")),
 			body: t.classBody([
 				t.classMethod(
 					"method",
 					t.identifier("render"),
 					[],
-					// handle arrow function
+					// TODO handle arrow function
 					!t.isBlockStatement(body) ? t.blockStatement([t.returnStatement(body)]) : body
 				)
 			])
@@ -183,31 +195,37 @@ const ID = (function() {
 
 	return {
 		visitor: {
+			// replace exports with a object to identify react component imports later
 			ExportDefaultDeclaration(path, { file }) {
+				// test with exporting a class and a class identifier
 				if (
 					t.isIdentifier(path.node.declaration) &&
 					isUpperCase(path.node.declaration.name) &&
 					isReactComp(file, path.node.declaration.name)
 				) {
+					// a class is exported
 					path.node.declaration = componentToExportTemplate(path.node.declaration);
 				} else {
+					// a function is exported
 					if (couldBeFunctionalComponent(path, null, false)) {
 						const { body, params } = path.node.declaration;
 						path.node.declaration = componentToExportTemplate(
-							functionToClass("Test", path, body, params, "ClassExpression")
+							functionToClass("", path, body, params, "ClassExpression")
 						);
 					}
 				}
 			},
 			ExportNamedDeclaration(path, { file }) {
 				for (let s of path.node.specifiers) {
+					// heuristic for detecting react component
+					// TODO unify with default export?
 					if (isUpperCase(s.local.name)) {
 						const exported = s.exported.name;
 						const newId = path.scope.generateUidIdentifier(s.local.name);
 						let result;
 						if (!isReactComp(file, s.local.name)) {
 							if (couldBeFunctionalComponent(path.scope, s.local.name)) {
-								// rewrite stateless into React.Component subclass
+								// rewrite functional into React.Component subclass
 								const declaration = path.scope.getBinding(s.local.name).path;
 								const body = declaration.node.body || declaration.node.init.body;
 								const params =
@@ -232,6 +250,8 @@ const ID = (function() {
 					}
 				}
 			},
+
+			// replace imports with hot reloading proxy wrappers if a component is imported
 			ImportDeclaration(path, { file }) {
 				if (path.node.source.value.match(shouldDoImport)) {
 					for (let s of path.node.specifiers) {
@@ -255,6 +275,7 @@ const ID = (function() {
 			Program: {
 				enter({ node, scope }, { file }) {
 					if (!shouldIgnoreFile(file.opts.filename)) {
+						// insert the module.hot header
 						node.body.unshift(headerTemplate());
 
 						file[MODULE_HOT] = scope.generateUidIdentifier("module_hot");
@@ -276,6 +297,7 @@ const ID = (function() {
 					// 	}
 					// });
 					if (!shouldIgnoreFile(file.opts.filename)) {
+						// run the module.hot header
 						path.node.body.push(hotWrapperRunTemplate({ ID: file[MODULE_HOT] }));
 					}
 				}
@@ -297,10 +319,10 @@ const ID = (function() {
 				} else if (
 					// extends React.Component
 					t.isMemberExpression(node.superClass) &&
-					// TODO better react detection
+					// TODO better react detection - via import?
 					node.superClass.object.name.toLowerCase() === "react" &&
 					(node.superClass.property.name === "Component" ||
-						node.superClass.property.name === "Pure.Component")
+						node.superClass.property.name === "PureComponent")
 				) {
 					file[REACT_COMPS].push(node.id);
 				}
