@@ -16,10 +16,7 @@ module.exports = function plugin(args) {
 	}
 	const { types: t, template } = args;
 	// TODO fix double import ?
-	const headerTemplate = template(
-		`const { createProxy, getForceUpdate } = require("react-proxy");`,
-		templateOptions
-	);
+	const headerTemplate = template(`const ID = require("react-proxy");`, templateOptions);
 	const shouldDoImport = /^\.?\.\//;
 	// @returns {
 	//		___component: id
@@ -31,13 +28,13 @@ module.exports = function plugin(args) {
 	const importProxyTemplate = template(
 		`const ID = (function() {
 	if (IMPORTID && IMPORTID.___component) {
-		const proxy = createProxy(IMPORTID.___component);
+		const proxy = PROXY.createProxy(IMPORTID.___component);
 		HOT.accept(require.resolve(IMPORT), function() {
 			const x = require(IMPORT)[NAME];
 			const mountedInstances = proxy.update(
 				x.___component
 			);
-			const forceUpdate = getForceUpdate(React);
+			const forceUpdate = PROXY.getForceUpdate(React);
 			mountedInstances.forEach(forceUpdate);
 		});
 		return proxy.get();
@@ -102,6 +99,21 @@ const ID = (function() {
 	// Keys to keep information on file object
 	const MODULE_HOT = Symbol("Wrapper(module.hot)");
 	const REACT_COMPS = Symbol("React Components");
+	const PROXY_IMPORT = Symbol("react-proxy imports");
+
+	const ensureHotWrapper = file => {
+		// insert the proxy import
+		if (!file[PROXY_IMPORT]) {
+			file[PROXY_IMPORT] = file.path.scope.generateUidIdentifier("react_proxy");
+			file.path.node.body.unshift(headerTemplate({ ID: file[PROXY_IMPORT] }));
+		}
+
+		// insert the module hot wrapper
+		if (!file[MODULE_HOT]) {
+			file[MODULE_HOT] = file.path.scope.generateUidIdentifier("module_hot");
+			file.path.node.body.unshift(hotWrapperTemplate({ ID: file[MODULE_HOT] }));
+		}
+	};
 
 	// Have we seen this class name as a Component declaration already?
 	const declaredAsReactComp = (file, name) =>
@@ -243,10 +255,11 @@ const ID = (function() {
 							: true) &&
 						isReactComp(path.node.declaration, path.scope)
 					) {
-						path.node.declaration = componentToExportTemplate({
-							...path.node.declaration,
-							type: "ClassExpression"
-						});
+						path.node.declaration = componentToExportTemplate(
+							Object.assign({}, path.node.declaration, {
+								type: "ClassExpression"
+							})
+						);
 					} else if (
 						t.isIdentifier(path.node.declaration)
 							? couldBeFunctionalComponent(path.scope, path.node.declaration.name)
@@ -333,9 +346,12 @@ const ID = (function() {
 
 						s.local = path.scope.generateUidIdentifierBasedOnNode(s.local);
 
+						ensureHotWrapper(file);
+
 						path.insertAfter(
 							importProxyTemplate({
 								HOT: file[MODULE_HOT],
+								PROXY: file[PROXY_IMPORT],
 								ID: t.identifier(oldId),
 								NAME: t.stringLiteral(name),
 								IMPORTID: s.local,
@@ -348,12 +364,6 @@ const ID = (function() {
 			Program: {
 				enter({ node, scope }, { file }) {
 					if (!shouldIgnoreFile(file.opts.filename)) {
-						// insert the module.hot header
-						node.body.unshift(headerTemplate());
-
-						file[MODULE_HOT] = scope.generateUidIdentifier("module_hot");
-						node.body.unshift(hotWrapperTemplate({ ID: file[MODULE_HOT] }));
-
 						file[REACT_COMPS] = [];
 					}
 				},
@@ -370,8 +380,9 @@ const ID = (function() {
 					// 	}
 					// });
 					if (!shouldIgnoreFile(file.opts.filename)) {
-						// run the module.hot header
-						path.node.body.push(hotWrapperRunTemplate({ ID: file[MODULE_HOT] }));
+						// run the module.hot wrapper
+						if (file[MODULE_HOT])
+							path.node.body.push(hotWrapperRunTemplate({ ID: file[MODULE_HOT] }));
 					}
 				}
 			},
