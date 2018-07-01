@@ -8,16 +8,17 @@ const shouldIgnoreFile = file =>
 	!!file
 		.split("\\")
 		.join("/")
-		.match(/node_modules\/(react|react-hot-loader)([\/]|$)/);
+		.match(/node_modules\//);
 
 module.exports = function plugin(args) {
 	if (this && this.callback) {
 		throw new Error();
 	}
 	const { types: t, template } = args;
-	// TODO fix double import ?
+
 	const headerTemplate = template(`const ID = require("react-proxy");`, templateOptions);
 	const shouldDoImport = /^\.?\.\//;
+
 	// @returns {
 	//		___component: id
 	//	}
@@ -221,7 +222,7 @@ const ID = (function() {
 		return {
 			type,
 			id: name ? t.identifier(name) : null,
-			// TODO PureComponent?
+			// TODO should be PureComponent?
 			superClass: t.memberExpression(t.identifier("React"), t.identifier("Component")),
 			body: t.classBody([
 				t.classMethod(
@@ -239,65 +240,61 @@ const ID = (function() {
 		visitor: {
 			// replace exports with a object to identify react component imports later on
 			ExportDefaultDeclaration(path, { file }) {
-				if (!shouldIgnoreFile(file.opts.filename)) {
-					if (
-						t.isIdentifier(path.node.declaration) &&
-						isUpperCase(path.node.declaration.name) &&
-						declaredAsReactComp(file, path.node.declaration.name)
-					) {
-						// a class is exported by identifier
-						path.node.declaration = componentToExportTemplate(path.node.declaration);
-					} else if (
-						// a class is exported directly
-						t.isClassDeclaration(path.node.declaration) &&
-						(path.node.declaration.id
-							? isUpperCase(path.node.declaration.id.name)
-							: true) &&
-						isReactComp(path.node.declaration, path.scope)
-					) {
-						path.node.declaration = componentToExportTemplate(
-							Object.assign({}, path.node.declaration, {
-								type: "ClassExpression"
-							})
+				if (
+					t.isIdentifier(path.node.declaration) &&
+					isUpperCase(path.node.declaration.name) &&
+					declaredAsReactComp(file, path.node.declaration.name)
+				) {
+					// a class is exported by identifier
+					path.node.declaration = componentToExportTemplate(path.node.declaration);
+				} else if (
+					// a class is exported directly
+					t.isClassDeclaration(path.node.declaration) &&
+					(path.node.declaration.id
+						? isUpperCase(path.node.declaration.id.name)
+						: true) &&
+					isReactComp(path.node.declaration, path.scope)
+				) {
+					path.node.declaration = componentToExportTemplate(
+						Object.assign({}, path.node.declaration, {
+							type: "ClassExpression"
+						})
+					);
+				} else if (
+					t.isIdentifier(path.node.declaration)
+						? couldBeFunctionalComponent(path.scope, path.node.declaration.name)
+						: // TODO add check if function
+						  couldBeFunctionalComponent(path, null, false)
+				) {
+					// a function is exported
+					if (t.isIdentifier(path.node.declaration)) {
+						// by identifier
+						const funcDeclaration = path.scope.getBinding(path.node.declaration.name)
+							.path;
+						const body = funcDeclaration.node.body || funcDeclaration.node.init.body;
+						const params =
+							funcDeclaration.node.params || funcDeclaration.node.init.params;
+
+						const set = x => {
+							if (funcDeclaration.node.init) funcDeclaration.node.init = x;
+							else funcDeclaration.node = x;
+						};
+
+						set(
+							functionToClass(
+								funcDeclaration.node.id.name,
+								funcDeclaration,
+								body,
+								params,
+								"ClassExpression"
+							)
 						);
-					} else if (
-						t.isIdentifier(path.node.declaration)
-							? couldBeFunctionalComponent(path.scope, path.node.declaration.name)
-							: // TODO add check if function
-							  couldBeFunctionalComponent(path, null, false)
-					) {
-						// a function is exported
-						if (t.isIdentifier(path.node.declaration)) {
-							// by identifier
-							const funcDeclaration = path.scope.getBinding(
-								path.node.declaration.name
-							).path;
-							const body =
-								funcDeclaration.node.body || funcDeclaration.node.init.body;
-							const params =
-								funcDeclaration.node.params || funcDeclaration.node.init.params;
-
-							const set = x => {
-								if (funcDeclaration.node.init) funcDeclaration.node.init = x;
-								else funcDeclaration.node = x;
-							};
-
-							set(
-								functionToClass(
-									funcDeclaration.node.id.name,
-									funcDeclaration,
-									body,
-									params,
-									"ClassExpression"
-								)
-							);
-						} else {
-							// directly
-							const { body, params } = path.node.declaration;
-							path.node.declaration = componentToExportTemplate(
-								functionToClass(null, path, body, params, "ClassExpression")
-							);
-						}
+					} else {
+						// directly
+						const { body, params } = path.node.declaration;
+						path.node.declaration = componentToExportTemplate(
+							functionToClass(null, path, body, params, "ClassExpression")
+						);
 					}
 				}
 			},
@@ -362,10 +359,12 @@ const ID = (function() {
 				}
 			},
 			Program: {
-				enter({ node, scope }, { file }) {
-					if (!shouldIgnoreFile(file.opts.filename)) {
-						file[REACT_COMPS] = [];
+				enter(path, { file }) {
+					if (shouldIgnoreFile(file.opts.filename)) {
+						path.skip();
+						return;
 					}
+					file[REACT_COMPS] = [];
 				},
 				exit(path, { file }) {
 					// path.traverse({
@@ -379,10 +378,9 @@ const ID = (function() {
 					// 		}
 					// 	}
 					// });
-					if (!shouldIgnoreFile(file.opts.filename)) {
-						// run the module.hot wrapper
-						if (file[MODULE_HOT])
-							path.node.body.push(hotWrapperRunTemplate({ ID: file[MODULE_HOT] }));
+					// run the module.hot wrapper
+					if (file[MODULE_HOT]) {
+						path.node.body.push(hotWrapperRunTemplate({ ID: file[MODULE_HOT] }));
 					}
 				}
 			},
