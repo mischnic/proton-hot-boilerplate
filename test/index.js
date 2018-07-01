@@ -58,19 +58,19 @@ const testCase = name => {
 console.log("TAP version 13");
 
 console.log("# default export");
-testCase("default-export-component");
-testCase("default-export-component-anonymous");
-testCase("default-export-component-react");
-testCase("default-export-component-react-renamed");
-testCase("default-export-component-renamed");
-testCase("default-export-component-variable");
-testCase("default-export-functional");
-testCase("default-export-functional-props");
-testCase("default-export-functional-variable");
-testCase("default-export-functional-variable-props");
-testCase("default-export-purecomponent");
-testCase("default-export-purecomponent-react");
-testCase("default-export-purecomponent-variable");
+testCase("export-default-component");
+testCase("export-default-component-anonymous");
+testCase("export-default-component-react");
+testCase("export-default-component-react-renamed");
+testCase("export-default-component-renamed");
+testCase("export-default-component-variable");
+testCase("export-default-functional");
+testCase("export-default-functional-props");
+testCase("export-default-functional-variable");
+testCase("export-default-functional-variable-props");
+testCase("export-default-purecomponent");
+testCase("export-default-purecomponent-react");
+testCase("export-default-purecomponent-variable");
 
 console.log(`\n1..${i}`);
 console.log(`\n# tests ${i}`);
