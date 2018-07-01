@@ -1,5 +1,6 @@
 const babel = require("babel-core");
 const fs = require("fs");
+process.chdir(__dirname);
 
 let i = 0;
 let failed = 0;
@@ -25,35 +26,38 @@ const transpileTo = (from, to) =>
 	);
 
 const testCase = name => {
-	console.log(`# ${name}`);
+	// console.log(`# ${name}`);
 	if (!fs.existsSync(`cases/${name}/_out`)) {
 		fs.mkdirSync(`cases/${name}/_out`);
 	}
 
 	const files = fs.readdirSync(`cases/${name}`).filter(v => v.endsWith(".js"));
-	for (let f of files) {
-		try {
-			transpileTo(`cases/${name}/${f}`, `cases/${name}/_out/${f}`);
-		} catch (e) {
-			notOk(f, "Babel error:\n" + e);
-			continue;
-		}
-
-		if (
-			fs.existsSync(`cases/${name}/_ref/${f}`) &&
-			fs.readFileSync(`cases/${name}/_out/${f}`).toString() ===
-				fs.readFileSync(`cases/${name}/_ref/${f}`).toString()
-		) {
-			ok(f);
-		} else {
-			notOk(f, "Error: not equal");
-			// skip(f);
-		}
+	const f = files[0];
+	// for (let f of files) {
+	try {
+		transpileTo(`cases/${name}/${f}`, `cases/${name}/_out/${f}`);
+	} catch (e) {
+		notOk(name, "Babel error:\n" + e);
+		return;
+		// continue;
 	}
+
+	if (
+		fs.existsSync(`cases/${name}/_ref/${f}`) &&
+		fs.readFileSync(`cases/${name}/_out/${f}`).toString() ===
+			fs.readFileSync(`cases/${name}/_ref/${f}`).toString()
+	) {
+		ok(name);
+	} else {
+		notOk(f, "Error: not equal");
+		// TODO add diff
+	}
+	// }
 };
 
 console.log("TAP version 13");
 
+console.log("# default export");
 testCase("default-export-component");
 testCase("default-export-component-anonymous");
 testCase("default-export-component-react");
