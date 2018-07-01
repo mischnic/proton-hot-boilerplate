@@ -104,7 +104,37 @@ const ID = (function() {
 	const REACT_COMPS = Symbol("React Components");
 
 	// Have we seen this class name as a Component declaration already?
-	const isReactComp = (file, name) => file[REACT_COMPS].findIndex(v => v.name === name) !== -1;
+	const declaredAsReactComp = (file, name) =>
+		file[REACT_COMPS].findIndex(v => v.name === name) !== -1;
+
+	const isReactComp = (node, scope) => {
+		if (t.isIdentifier(node.superClass)) {
+			// extends [Pure]Component
+			const superClass = scope.getBinding(node.superClass.name);
+			if (
+				superClass &&
+				t.isImportDeclaration(superClass.path.parent) &&
+				superClass.path.parent.source.value.toLowerCase() == "react" &&
+				(superClass.path.node.imported.name === "Component" ||
+					superClass.path.node.imported.name === "PureComponent")
+			) {
+				return true;
+			}
+		} else if (t.isMemberExpression(node.superClass)) {
+			// extends React.[Pure]Component
+			const superClass = scope.getBinding(node.superClass.object.name);
+			if (
+				superClass &&
+				superClass.path.parent.source.value.toLowerCase() == "react" &&
+				(node.superClass.property.name === "Component" ||
+					node.superClass.property.name === "PureComponent")
+			) {
+				return true;
+			}
+		}
+
+		return false;
+	};
 
 	const couldBeFunctionalComponent = (scopeOrPath, name, checkType = true) => {
 		let found = false;
@@ -123,7 +153,7 @@ const ID = (function() {
 			}
 		}
 
-		const x = p.traverse({
+		p.traverse({
 			MemberExpression(path, opts) {
 				if (
 					t.isIdentifier(path.node.object) &&
@@ -178,7 +208,7 @@ const ID = (function() {
 
 		return {
 			type,
-			id: t.identifier(name),
+			id: name ? t.identifier(name) : null,
 			// TODO PureComponent?
 			superClass: t.memberExpression(t.identifier("React"), t.identifier("Component")),
 			body: t.classBody([
@@ -195,23 +225,66 @@ const ID = (function() {
 
 	return {
 		visitor: {
-			// replace exports with a object to identify react component imports later
+			// replace exports with a object to identify react component imports later on
 			ExportDefaultDeclaration(path, { file }) {
-				// test with exporting a class and a class identifier
-				if (
-					t.isIdentifier(path.node.declaration) &&
-					isUpperCase(path.node.declaration.name) &&
-					isReactComp(file, path.node.declaration.name)
-				) {
-					// a class is exported
-					path.node.declaration = componentToExportTemplate(path.node.declaration);
-				} else {
-					// a function is exported
-					if (couldBeFunctionalComponent(path, null, false)) {
-						const { body, params } = path.node.declaration;
-						path.node.declaration = componentToExportTemplate(
-							functionToClass("", path, body, params, "ClassExpression")
-						);
+				if (!shouldIgnoreFile(file.opts.filename)) {
+					if (
+						t.isIdentifier(path.node.declaration) &&
+						isUpperCase(path.node.declaration.name) &&
+						declaredAsReactComp(file, path.node.declaration.name)
+					) {
+						// a class is exported by identifier
+						path.node.declaration = componentToExportTemplate(path.node.declaration);
+					} else if (
+						// a class is exported directly
+						t.isClassDeclaration(path.node.declaration) &&
+						(path.node.declaration.id
+							? isUpperCase(path.node.declaration.id.name)
+							: true) &&
+						isReactComp(path.node.declaration, path.scope)
+					) {
+						path.node.declaration = componentToExportTemplate({
+							...path.node.declaration,
+							type: "ClassExpression"
+						});
+					} else if (
+						t.isIdentifier(path.node.declaration)
+							? couldBeFunctionalComponent(path.scope, path.node.declaration.name)
+							: // TODO add check if function
+							  couldBeFunctionalComponent(path, null, false)
+					) {
+						// a function is exported
+						if (t.isIdentifier(path.node.declaration)) {
+							// by identifier
+							const funcDeclaration = path.scope.getBinding(
+								path.node.declaration.name
+							).path;
+							const body =
+								funcDeclaration.node.body || funcDeclaration.node.init.body;
+							const params =
+								funcDeclaration.node.params || funcDeclaration.node.init.params;
+
+							const set = x => {
+								if (funcDeclaration.node.init) funcDeclaration.node.init = x;
+								else funcDeclaration.node = x;
+							};
+
+							set(
+								functionToClass(
+									funcDeclaration.node.id.name,
+									funcDeclaration,
+									body,
+									params,
+									"ClassExpression"
+								)
+							);
+						} else {
+							// directly
+							const { body, params } = path.node.declaration;
+							path.node.declaration = componentToExportTemplate(
+								functionToClass(null, path, body, params, "ClassExpression")
+							);
+						}
 					}
 				}
 			},
@@ -223,7 +296,7 @@ const ID = (function() {
 						const exported = s.exported.name;
 						const newId = path.scope.generateUidIdentifier(s.local.name);
 						let result;
-						if (!isReactComp(file, s.local.name)) {
+						if (!declaredAsReactComp(file, s.local.name)) {
 							if (couldBeFunctionalComponent(path.scope, s.local.name)) {
 								// rewrite functional into React.Component subclass
 								const declaration = path.scope.getBinding(s.local.name).path;
@@ -304,26 +377,7 @@ const ID = (function() {
 			},
 			ClassDeclaration({ node, scope }, { file }) {
 				// Maintain a list of React.Component subclasses
-				if (t.isIdentifier(node.superClass)) {
-					// extends Component
-					const superClass = scope.getBinding(node.superClass.name);
-					if (
-						superClass &&
-						t.isImportDeclaration(superClass.path.parent) &&
-						superClass.path.parent.source.value.toLowerCase() == "react" &&
-						(superClass.path.node.imported.name === "Component" ||
-							superClass.path.node.imported.name === "PureComponent")
-					) {
-						file[REACT_COMPS].push(node.id);
-					}
-				} else if (
-					// extends React.Component
-					t.isMemberExpression(node.superClass) &&
-					// TODO better react detection - via import?
-					node.superClass.object.name.toLowerCase() === "react" &&
-					(node.superClass.property.name === "Component" ||
-						node.superClass.property.name === "PureComponent")
-				) {
+				if (isReactComp(node, scope)) {
 					file[REACT_COMPS].push(node.id);
 				}
 			}

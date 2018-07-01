@@ -1,7 +1,7 @@
 const path = require('path');
 const nodeExternals = require('webpack-node-externals');
 
-const babelrc = JSON.parse(require("fs").readFileSync(".babelrc"));
+const babelrc = JSON.parse(require("fs").readFileSync(".babelrc").toString().split("\n").filter(v => !/\s\/\//.test(v)).join("\n"));
 babelrc.plugins = babelrc.plugins || [];
 babelrc.plugins.push(path.join(__dirname, 'babel.js'),);
 
