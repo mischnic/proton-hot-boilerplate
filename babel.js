@@ -347,6 +347,8 @@ const ID = (function() {
 
 			// replace imports with hot reloading proxy wrappers if a component is imported
 			ImportDeclaration(path, { file }) {
+				const node = path.node;
+				const proxies = [];
 				if (path.node.source.value.match(shouldDoImport)) {
 					for (let s of path.node.specifiers) {
 						const oldId = s.local.name;
@@ -356,16 +358,21 @@ const ID = (function() {
 
 						ensureHotWrapper(file);
 
-						path.insertAfter(
+						proxies.push(
 							importProxyTemplate({
 								HOT: file[MODULE_HOT],
 								PROXY: file[PROXY_IMPORT],
 								ID: t.identifier(oldId),
 								NAME: t.stringLiteral(name),
 								IMPORTID: s.local,
-								IMPORT: t.stringLiteral(path.node.source.value)
+								IMPORT: t.stringLiteral(node.source.value)
 							})
 						);
+					}
+					if (proxies) {
+						proxies.unshift(path.node);
+						path.replaceWithMultiple(proxies);
+						path.skip();
 					}
 				}
 			},

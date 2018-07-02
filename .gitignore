@@ -1,4 +1,4 @@
 node_modules/
 build/
 dist/
-test/cases/*/_out
+test/cases/*/_out*
