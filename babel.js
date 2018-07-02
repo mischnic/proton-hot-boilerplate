@@ -275,20 +275,31 @@ const ID = (function() {
 						const params =
 							funcDeclaration.node.params || funcDeclaration.node.init.params;
 
-						const set = x => {
-							if (funcDeclaration.node.init) funcDeclaration.node.init = x;
-							else funcDeclaration.node = x;
-						};
-
-						set(
-							functionToClass(
-								funcDeclaration.node.id.name,
-								funcDeclaration,
-								body,
-								params,
-								"ClassExpression"
-							)
-						);
+						if (t.isVariableDeclarator(funcDeclaration)) {
+							const set = x => {
+								if (funcDeclaration.node.init) funcDeclaration.node.init = x;
+								else funcDeclaration.node.replaceWith(x);
+							};
+							set(
+								functionToClass(
+									funcDeclaration.node.id.name,
+									funcDeclaration,
+									body,
+									params,
+									"ClassExpression"
+								)
+							);
+						} else if (t.isFunctionDeclaration(funcDeclaration)) {
+							funcDeclaration.replaceWith(
+								functionToClass(
+									funcDeclaration.node.id.name,
+									funcDeclaration,
+									body,
+									params
+								)
+							);
+						}
+						path.node.declaration = componentToExportTemplate(path.node.declaration);
 					} else {
 						// directly
 						const { body, params } = path.node.declaration;

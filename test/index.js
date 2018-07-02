@@ -49,7 +49,7 @@ const testCase = name => {
 	) {
 		ok(name);
 	} else {
-		notOk(f, "Error: not equal");
+		notOk(name, "Error: not equal");
 		// TODO add diff
 	}
 	// }
@@ -57,20 +57,34 @@ const testCase = name => {
 
 console.log("TAP version 13");
 
-console.log("# default export");
+console.log("# export default");
 testCase("export-default-component");
 testCase("export-default-component-anonymous");
 testCase("export-default-component-react");
 testCase("export-default-component-react-renamed");
 testCase("export-default-component-renamed");
 testCase("export-default-component-variable");
-testCase("export-default-functional");
-testCase("export-default-functional-props");
-testCase("export-default-functional-variable");
-testCase("export-default-functional-variable-props");
+testCase("export-default-functional-arrow");
+testCase("export-default-functional-arrow-props");
+testCase("export-default-functional-arrow-variable");
+testCase("export-default-functional-arrow-variable-props");
+testCase("export-default-functional-func");
+testCase("export-default-functional-func-props");
+testCase("export-default-functional-func-variable");
+testCase("export-default-functional-func-variable-props");
 testCase("export-default-purecomponent");
 testCase("export-default-purecomponent-react");
 testCase("export-default-purecomponent-variable");
+
+console.log("# export named");
+testCase("export-named-component");
+testCase("export-named-component-react");
+testCase("export-named-component-react-renamed");
+testCase("export-named-component-renamed");
+testCase("export-named-functional-arrow");
+testCase("export-named-functional-arrow-props");
+testCase("export-named-functional-func");
+testCase("export-named-functional-func-props");
 
 console.log(`\n1..${i}`);
 console.log(`\n# tests ${i}`);
