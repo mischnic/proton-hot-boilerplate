@@ -39,7 +39,7 @@ const transpileTo = (from, to, env) =>
 		).code
 	);
 
-const testCase = (name, env = false) => {
+const unit = (name, env = false) => {
 	// console.log(`# ${name}`);
 	const displayName = name + (env ? " (env)" : "");
 	if (args.length) {
@@ -53,18 +53,18 @@ const testCase = (name, env = false) => {
 			return;
 		}
 	}
-	const out = `cases/${name}/_out${env ? "_env" : ""}`;
-	const ref = `cases/${name}/_ref${env ? "_env" : ""}`;
+	const out = `units/${name}/_out${env ? "_env" : ""}`;
+	const ref = `units/${name}/_ref${env ? "_env" : ""}`;
 
 	if (!fs.existsSync(out)) {
 		fs.mkdirSync(out);
 	}
 
-	const files = fs.readdirSync(`cases/${name}`).filter(v => v.endsWith(".js"));
+	const files = fs.readdirSync(`units/${name}`).filter(v => v.endsWith(".js"));
 	const f = files[0];
 	// for (let f of files) {
 	try {
-		transpileTo(`cases/${name}/${f}`, `${out}/${f}`, env);
+		transpileTo(`units/${name}/${f}`, `${out}/${f}`, env);
 	} catch (e) {
 		notOk(displayName, "Babel error:\n" + e);
 		return;
@@ -113,7 +113,7 @@ console.log("# export default");
 	"export-default-purecomponent",
 	"export-default-purecomponent-react",
 	"export-default-purecomponent-variable"
-].forEach(t => testCase(t) || testCase(t, true));
+].forEach(t => unit(t) || unit(t, true));
 
 console.log("# export named");
 [
@@ -127,7 +127,7 @@ console.log("# export named");
 	"export-named-functional-func-props",
 	"export-named-functional-func-anonymous",
 	"export-named-functional-func-anonymous-props"
-].forEach(t => testCase(t) || testCase(t, true));
+].forEach(t => unit(t) || unit(t, true));
 
 console.log("# import");
 [
@@ -135,7 +135,7 @@ console.log("# import");
 	"import-named",
 	"import-named-multiple",
 	"import-named-multiple-default"
-].forEach(t => testCase(t) || testCase(t, true));
+].forEach(t => unit(t) || unit(t, true));
 
 console.log(`\n1..${i}`);
 console.log(`\n# tests ${i}`);
