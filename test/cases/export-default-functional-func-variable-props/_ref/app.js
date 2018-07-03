@@ -1,5 +1,5 @@
 import React, { Component, PureComponent } from "React";
-import { Box, TextInput, Text } from "proton-native";
+import { Box, Text } from "proton-native";
 
 class Example extends React.Component {
 	render() {

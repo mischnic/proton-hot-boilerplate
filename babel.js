@@ -196,6 +196,7 @@ const ID = (function() {
 				declaration.scope.rename(propName, "this.props");
 			} else {
 				declaration.traverse({
+					// replace `props.*` expressions with `this.props.*``
 					MemberExpression(path, opts) {
 						const node = path.node;
 						path.skip();
@@ -276,20 +277,23 @@ const ID = (function() {
 							funcDeclaration.node.params || funcDeclaration.node.init.params;
 
 						if (t.isVariableDeclarator(funcDeclaration)) {
-							const set = x => {
-								if (funcDeclaration.node.init) funcDeclaration.node.init = x;
-								else funcDeclaration.node.replaceWith(x);
-							};
-							set(
-								functionToClass(
-									funcDeclaration.node.id.name,
-									funcDeclaration,
-									body,
-									params,
-									"ClassExpression"
-								)
+							// const X = ....
+							funcDeclaration.parentPath.replaceWith(
+								t.variableDeclaration(funcDeclaration.parentPath.node.kind, [
+									t.variableDeclarator(
+										funcDeclaration.node.id,
+										functionToClass(
+											null,
+											funcDeclaration,
+											body,
+											params,
+											"ClassExpression"
+										)
+									)
+								])
 							);
 						} else if (t.isFunctionDeclaration(funcDeclaration)) {
+							// function X(){...
 							funcDeclaration.replaceWith(
 								functionToClass(
 									funcDeclaration.node.id.name,

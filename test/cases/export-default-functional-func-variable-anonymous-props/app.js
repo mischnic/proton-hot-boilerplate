@@ -1,8 +1,8 @@
 import React, { Component, PureComponent } from "React";
-import { Box, Text } from "proton-native";
+import { Box, TextInput, Text } from "proton-native";
 
-function Example(props) {
+const Example = function(props) {
 	return <Text>{`${props.val} ${props.val.x.y.z}`}</Text>;
-}
+};
 
 export default Example;
