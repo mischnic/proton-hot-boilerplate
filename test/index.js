@@ -2,6 +2,8 @@ const babel = require("babel-core");
 const fs = require("fs");
 process.chdir(__dirname);
 
+const args = process.argv.slice(2);
+
 let i = 0;
 let failed = 0;
 
@@ -17,40 +19,73 @@ const notOk = (name, msg) => {
 	failed++;
 };
 
-const transpileTo = (from, to) =>
+const transpileTo = (from, to, env) =>
 	fs.writeFileSync(
 		to,
-		babel.transformFileSync(from, {
-			ast: false
-		}).code
+		babel.transformFileSync(
+			from,
+			Object.assign(
+				{
+					ast: false
+				},
+				env
+					? {
+							babelrc: false,
+							presets: ["env", "react"],
+							plugins: ["../../../babel.js"]
+					  }
+					: {}
+			)
+		).code
 	);
 
-const testCase = name => {
+const testCase = (name, env = false) => {
 	// console.log(`# ${name}`);
-	if (!fs.existsSync(`cases/${name}/_out`)) {
-		fs.mkdirSync(`cases/${name}/_out`);
+	const displayName = name + (env ? " (env)" : "");
+	if (args.length) {
+		let found = false;
+		for (let x of args) {
+			if (displayName.indexOf(x) !== -1) {
+				found = true;
+			}
+		}
+		if (!found) {
+			return;
+		}
+	}
+	const out = `cases/${name}/_out${env ? "_env" : ""}`;
+	const ref = `cases/${name}/_ref${env ? "_env" : ""}`;
+
+	if (!fs.existsSync(out)) {
+		fs.mkdirSync(out);
 	}
 
 	const files = fs.readdirSync(`cases/${name}`).filter(v => v.endsWith(".js"));
 	const f = files[0];
 	// for (let f of files) {
 	try {
-		transpileTo(`cases/${name}/${f}`, `cases/${name}/_out/${f}`);
+		transpileTo(`cases/${name}/${f}`, `${out}/${f}`, env);
 	} catch (e) {
-		notOk(name, "Babel error:\n" + e);
+		notOk(displayName, "Babel error:\n" + e);
 		return;
 		// continue;
 	}
 
-	if (
-		fs.existsSync(`cases/${name}/_ref/${f}`) &&
-		fs.readFileSync(`cases/${name}/_out/${f}`).toString() ===
-			fs.readFileSync(`cases/${name}/_ref/${f}`).toString()
-	) {
-		ok(name);
+	if (fs.existsSync(`${ref}/${f}`)) {
+		if (
+			fs.readFileSync(`${out}/${f}`).toString() === fs.readFileSync(`${ref}/${f}`).toString()
+		) {
+			ok(displayName);
+		} else {
+			notOk(displayName, "Error: not equal");
+			// TODO add diff, ignore indentation/empty lines
+		}
 	} else {
-		notOk(name, "Error: not equal");
-		// TODO add diff
+		skip(displayName);
+		// if (!fs.existsSync(ref)) {
+		// 	fs.mkdirSync(ref);
+		// }
+		// fs.copyFileSync(`${out}/${f}`, `${ref}/${f}`);
 	}
 	// }
 };
@@ -58,33 +93,49 @@ const testCase = name => {
 console.log("TAP version 13");
 
 console.log("# export default");
-testCase("export-default-component");
-testCase("export-default-component-anonymous");
-testCase("export-default-component-react");
-testCase("export-default-component-react-renamed");
-testCase("export-default-component-renamed");
-testCase("export-default-component-variable");
-testCase("export-default-functional-arrow");
-testCase("export-default-functional-arrow-props");
-testCase("export-default-functional-arrow-variable");
-testCase("export-default-functional-arrow-variable-props");
-testCase("export-default-functional-func");
-testCase("export-default-functional-func-props");
-testCase("export-default-functional-func-variable");
-testCase("export-default-functional-func-variable-props");
-testCase("export-default-purecomponent");
-testCase("export-default-purecomponent-react");
-testCase("export-default-purecomponent-variable");
+[
+	"export-default-component",
+	"export-default-component-anonymous",
+	"export-default-component-react",
+	"export-default-component-react-renamed",
+	"export-default-component-renamed",
+	"export-default-component-variable",
+	"export-default-functional-arrow",
+	"export-default-functional-arrow-props",
+	"export-default-functional-arrow-variable",
+	"export-default-functional-arrow-variable-props",
+	"export-default-functional-func",
+	"export-default-functional-func-props",
+	"export-default-functional-func-variable",
+	"export-default-functional-func-variable-props",
+	"export-default-functional-func-variable-anonymous",
+	"export-default-functional-func-variable-anonymous-props",
+	"export-default-purecomponent",
+	"export-default-purecomponent-react",
+	"export-default-purecomponent-variable"
+].forEach(t => testCase(t) || testCase(t, true));
 
 console.log("# export named");
-testCase("export-named-component");
-testCase("export-named-component-react");
-testCase("export-named-component-react-renamed");
-testCase("export-named-component-renamed");
-testCase("export-named-functional-arrow");
-testCase("export-named-functional-arrow-props");
-testCase("export-named-functional-func");
-testCase("export-named-functional-func-props");
+[
+	"export-named-component",
+	"export-named-component-react",
+	"export-named-component-react-renamed",
+	"export-named-component-renamed",
+	"export-named-functional-arrow",
+	"export-named-functional-arrow-props",
+	"export-named-functional-func",
+	"export-named-functional-func-props",
+	"export-named-functional-func-anonymous",
+	"export-named-functional-func-anonymous-props"
+].forEach(t => testCase(t) || testCase(t, true));
+
+console.log("# import");
+[
+	"import-default",
+	"import-named",
+	"import-named-multiple",
+	"import-named-multiple-default"
+].forEach(t => testCase(t) || testCase(t, true));
 
 console.log(`\n1..${i}`);
 console.log(`\n# tests ${i}`);
