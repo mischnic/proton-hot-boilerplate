@@ -11,9 +11,8 @@ yarn dev # or npm run dev
 
 ## Caveats/Issues
 
-- **WIP**: Hot reloading `index.js` (the main script) doesn't work (because reloading a `App` component doesn't work)
+- **WIP**: Hot reloading `index.js` (the main script) doesn't work
 - The Windows position resets if reloaded ~(can't be fixed ?)~
-- Higher order components likely don't work
-- There should really be a test for every edge case of the babel transform
+- Higher order components aren't hot reloaded (yet?)
 
-**Nevertheless, please open an issue with any code that isn't working as expected (e.g. not working at all or not hot reloading).**
+**Nevertheless, please open an issue with any code that isn't working as expected (e.g. not working at all (crashing) or not hot reloading).**

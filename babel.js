@@ -149,22 +149,31 @@ const ID = (function() {
 		return false;
 	};
 
-	const couldBeFunctionalComponent = (scopeOrPath, name, checkType = true) => {
-		let found = false;
-		const p = name ? scopeOrPath.getBinding(name).path : scopeOrPath;
-
-		if (checkType) {
-			if (
-				!t.isFunctionDeclaration(p.node) &&
-				!(
-					t.isVariableDeclarator(p.node) &&
-					(t.isFunctionExpression(p.node.init) ||
-						t.isArrowFunctionExpression(p.node.init))
-				)
-			) {
-				return false;
+	const couldBeFunctionalComponent = (p, declaration) => {
+		if (
+			t.isFunctionDeclaration(declaration) ||
+			t.isFunctionDeclaration(p.node) ||
+			t.isArrowFunctionExpression(declaration) ||
+			t.isArrowFunctionExpression(p.node)
+		) {
+			if (!declaration) {
+				declaration = p.node;
 			}
+		} else if (
+			(t.isVariableDeclarator(declaration) || t.isVariableDeclarator(p.node)) &&
+			((declaration && t.isFunctionExpression(declaration.init)) ||
+				(declaration && t.isArrowFunctionExpression(declaration.init)) ||
+				t.isFunctionExpression(p.node.init) ||
+				t.isArrowFunctionExpression(p.node.init))
+		) {
+			if (!declaration) {
+				declaration = p.node.init;
+			}
+		} else {
+			return false;
 		}
+
+		let found = false;
 
 		p.traverse({
 			MemberExpression(path, opts) {
@@ -172,15 +181,20 @@ const ID = (function() {
 					t.isIdentifier(path.node.object) &&
 					path.node.object.name === "React" &&
 					t.isIdentifier(path.node.property) &&
-					path.node.property.name === "createElement"
+					path.node.property.name === "createElement" &&
+					// are we directly inside that function?
+					// prevent transformation of HOC
+					path.scope.block === declaration
 				) {
 					found = true;
 					path.stop();
 				}
 			},
 			JSXElement(path, opts) {
-				found = true;
-				path.stop();
+				if (path.scope.block === declaration) {
+					found = true;
+					path.stop();
+				}
 			}
 		});
 
@@ -230,7 +244,7 @@ const ID = (function() {
 					"method",
 					t.identifier("render"),
 					[],
-					// TODO handle arrow function
+					// TODO handle arrow function ?
 					!t.isBlockStatement(body) ? t.blockStatement([t.returnStatement(body)]) : body
 				)
 			])
@@ -263,13 +277,14 @@ const ID = (function() {
 					);
 				} else if (
 					t.isIdentifier(path.node.declaration)
-						? couldBeFunctionalComponent(path.scope, path.node.declaration.name)
-						: // TODO add check if function
-						  couldBeFunctionalComponent(path, null, false)
+						? couldBeFunctionalComponent(
+								path.scope.getBinding(path.node.declaration.name).path
+						  )
+						: couldBeFunctionalComponent(path, path.node.declaration)
 				) {
 					// a function is exported
 					if (t.isIdentifier(path.node.declaration)) {
-						// by identifier
+						// ... by identifier
 						const funcDeclaration = path.scope.getBinding(path.node.declaration.name)
 							.path;
 						const body = funcDeclaration.node.body || funcDeclaration.node.init.body;
@@ -305,7 +320,7 @@ const ID = (function() {
 						}
 						path.node.declaration = componentToExportTemplate(path.node.declaration);
 					} else {
-						// directly
+						// ... directly
 						const { body, params } = path.node.declaration;
 						path.node.declaration = componentToExportTemplate(
 							functionToClass(null, path, body, params, "ClassExpression")
@@ -315,14 +330,16 @@ const ID = (function() {
 			},
 			ExportNamedDeclaration(path, { file }) {
 				for (let s of path.node.specifiers) {
-					// heuristic for detecting react component
 					// TODO unify with default export?
+					// heuristic for detecting react component
 					if (isUpperCase(s.local.name)) {
 						const exported = s.exported.name;
 						const newId = path.scope.generateUidIdentifier(s.local.name);
 						let result;
 						if (!declaredAsReactComp(file, s.local.name)) {
-							if (couldBeFunctionalComponent(path.scope, s.local.name)) {
+							if (
+								couldBeFunctionalComponent(path.scope.getBinding(s.local.name).path)
+							) {
 								// rewrite functional into React.Component subclass
 								const declaration = path.scope.getBinding(s.local.name).path;
 								const body = declaration.node.body || declaration.node.init.body;
@@ -400,6 +417,7 @@ const ID = (function() {
 					// 		}
 					// 	}
 					// });
+
 					// run the module.hot wrapper
 					if (file[MODULE_HOT]) {
 						path.node.body.push(hotWrapperRunTemplate({ ID: file[MODULE_HOT] }));
@@ -407,7 +425,7 @@ const ID = (function() {
 				}
 			},
 			ClassDeclaration({ node, scope }, { file }) {
-				// Maintain a list of React.Component subclasses
+				// Maintain a list of React.[Pure]Component subclasses
 				if (isReactComp(node, scope)) {
 					file[REACT_COMPS].push(node.id);
 				}

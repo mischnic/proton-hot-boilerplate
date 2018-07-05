@@ -2,7 +2,7 @@ const babel = require("babel-core");
 const fs = require("fs");
 process.chdir(__dirname);
 
-const args = process.argv.slice(2);
+const args = process.argv.slice(2).map(v => new RegExp(v));
 
 let i = 0;
 let failed = 0;
@@ -45,7 +45,7 @@ const unit = (name, env = false) => {
 	if (args.length) {
 		let found = false;
 		for (let x of args) {
-			if (displayName.indexOf(x) !== -1) {
+			if (x.test(displayName)) {
 				found = true;
 			}
 		}
@@ -110,6 +110,7 @@ console.log("# export default");
 	"export-default-functional-func-variable-props",
 	"export-default-functional-func-variable-anonymous",
 	"export-default-functional-func-variable-anonymous-props",
+	"export-default-hoc-func",
 	"export-default-purecomponent",
 	"export-default-purecomponent-react",
 	"export-default-purecomponent-variable"
@@ -126,7 +127,10 @@ console.log("# export named");
 	"export-named-functional-func",
 	"export-named-functional-func-props",
 	"export-named-functional-func-anonymous",
-	"export-named-functional-func-anonymous-props"
+	"export-named-functional-func-anonymous-props",
+	"export-named-hoc-arrow",
+	"export-named-hoc-func",
+	"export-named-hoc-func-anonymous"
 ].forEach(t => unit(t) || unit(t, true));
 
 console.log("# import");
