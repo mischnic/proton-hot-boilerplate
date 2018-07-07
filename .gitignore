@@ -2,3 +2,5 @@ node_modules/
 build/
 dist/
 test/units/*/_out*
+.nyc_output
+coverage

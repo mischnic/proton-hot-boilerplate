@@ -94,6 +94,8 @@ console.log("TAP version 13");
 
 console.log("# export default");
 [
+	"export-default-class",
+	"export-default-class-superclass",
 	"export-default-component",
 	"export-default-component-anonymous",
 	"export-default-component-react",
@@ -118,6 +120,9 @@ console.log("# export default");
 
 console.log("# export named");
 [
+	"export-named-class",
+	"export-named-class-superclass",
+	"export-named-class-anonymous",
 	"export-named-component",
 	"export-named-component-react",
 	"export-named-component-react-renamed",

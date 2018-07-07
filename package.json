@@ -9,7 +9,8 @@
 		"build": "babel -d dist src",
 		"dev": "node-hot --fork",
 		"lint": "prettier --use-tabs --tab-width=4 --print-width=100 --write src/*.js babel.js test/index.js test/units/*/*.js",
-		"test": "node test/index.js | tap-spec"
+		"test": "node test/index.js | tap-spec",
+		"coverage": "nyc --include babel.js --reporter html --reporter text npm run test"
 	},
 	"dependencies": {
 		"proton-native": "^1.1.8",
@@ -23,6 +24,7 @@
 		"babel-preset-react": "^6.24.1",
 		"babel-preset-stage-0": "^6.24.1",
 		"node-hot-loader": "^1.8.2",
+		"nyc": "^12.0.2",
 		"prettier": "^1.12.1",
 		"react-proxy": "^1.1.8",
 		"webpack": "^4.6.0",

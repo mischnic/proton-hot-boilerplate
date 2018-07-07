@@ -390,11 +390,9 @@ const ID = (function() {
 							})
 						);
 					}
-					if (proxies) {
-						proxies.unshift(path.node);
-						path.replaceWithMultiple(proxies);
-						path.skip();
-					}
+
+					proxies.unshift(path.node);
+					path.replaceWithMultiple(proxies);
 				}
 			},
 			Program: {
