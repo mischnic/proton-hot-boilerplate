@@ -92,8 +92,7 @@ const ID = (function() {
 		if (module.hot.data && module.hot.data.proxy) {
 			// hot reload
 			const mountedInstances = module.hot.data.proxy.update(Wrapper);
-			const forceUpdate = PROXY.getForceUpdate(React);
-			mountedInstances.forEach(forceUpdate);
+			mountedInstances.forEach(i => i.forceUpdate());
 		} else {
 			// initial render
 			proxy = PROXY.createProxy(Wrapper);

@@ -56,10 +56,7 @@ class HotApp extends Component {
 
 		if (module.hot.data && module.hot.data.proxy) {
 			const mountedInstances = module.hot.data.proxy.update(Wrapper);
-
-			const forceUpdate = _react_proxy.getForceUpdate(React);
-
-			mountedInstances.forEach(forceUpdate);
+			mountedInstances.forEach(i => i.forceUpdate());
 		} else {
 			proxy = _react_proxy.createProxy(Wrapper);
 			render(React.createElement(proxy.get()));

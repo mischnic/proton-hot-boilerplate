@@ -96,10 +96,9 @@ var HotApp = function (_Component) {
 
 		if (module.hot.data && module.hot.data.proxy) {
 			var mountedInstances = module.hot.data.proxy.update(Wrapper);
-
-			var forceUpdate = _react_proxy.getForceUpdate(_React2.default);
-
-			mountedInstances.forEach(forceUpdate);
+			mountedInstances.forEach(function (i) {
+				return i.forceUpdate();
+			});
 		} else {
 			proxy = _react_proxy.createProxy(Wrapper);
 			(0, _protonNative.render)(_React2.default.createElement(proxy.get()));
