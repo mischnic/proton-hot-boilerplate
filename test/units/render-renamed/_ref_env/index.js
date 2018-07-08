@@ -8,15 +8,7 @@ var _React2 = _interopRequireDefault(_React);
 
 var _protonNative = require("proton-native");
 
-var _app = require("./app.js");
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 const _module_hot = function () {
 	if (module.hot) {
@@ -54,25 +46,11 @@ const _module_hot = function () {
 
 const _react_proxy = require("react-proxy");
 
-var Example = function () {
-	if (_app.Example && _app.Example.___component) {
-		var proxy = _react_proxy.createProxy(_app.Example.___component);
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-		_module_hot.accept(require.resolve("./app.js"), function () {
-			var x = require("./app.js")["Example"];
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
-			var mountedInstances = proxy.update(x.___component);
-
-			var forceUpdate = _react_proxy.getForceUpdate(_React2.default);
-
-			mountedInstances.forEach(forceUpdate);
-		});
-
-		return proxy.get();
-	} else {
-		return _app.Example;
-	}
-}();
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var HotApp = function (_Component) {
 	_inherits(HotApp, _Component);
@@ -126,10 +104,12 @@ var HotApp = function (_Component) {
 
 		if (module.hot.data && module.hot.data.proxy) {
 			var mountedInstances = module.hot.data.proxy.update(Wrapper);
-			var forceUpdate = getForceUpdate(_React2.default);
+
+			var forceUpdate = _react_proxy.getForceUpdate(_React2.default);
+
 			mountedInstances.forEach(forceUpdate);
 		} else {
-			proxy = createProxy(Wrapper);
+			proxy = _react_proxy.createProxy(Wrapper);
 			(0, _protonNative.render)(_React2.default.createElement(proxy.get()));
 		}
 

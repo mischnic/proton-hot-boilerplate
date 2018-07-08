@@ -36,27 +36,6 @@ const _react_proxy = require("react-proxy");
 
 import React, { Component } from "React";
 import { App, Window, render as r } from "proton-native";
-import { Example as _Example } from "./app.js";
-
-const Example = function () {
-	if (_Example && _Example.___component) {
-		const proxy = _react_proxy.createProxy(_Example.___component);
-
-		_module_hot.accept(require.resolve("./app.js"), function () {
-			const x = require("./app.js")["Example"];
-
-			const mountedInstances = proxy.update(x.___component);
-
-			const forceUpdate = _react_proxy.getForceUpdate(React);
-
-			mountedInstances.forEach(forceUpdate);
-		});
-
-		return proxy.get();
-	} else {
-		return _Example;
-	}
-}();
 
 class HotApp extends Component {
 	render() {
@@ -85,10 +64,12 @@ class HotApp extends Component {
 
 		if (module.hot.data && module.hot.data.proxy) {
 			const mountedInstances = module.hot.data.proxy.update(Wrapper);
-			const forceUpdate = getForceUpdate(React);
+
+			const forceUpdate = _react_proxy.getForceUpdate(React);
+
 			mountedInstances.forEach(forceUpdate);
 		} else {
-			proxy = createProxy(Wrapper);
+			proxy = _react_proxy.createProxy(Wrapper);
 			r(React.createElement(proxy.get()));
 		}
 

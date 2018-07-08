@@ -1,6 +1,5 @@
 import React, { Component } from "React";
 import { App, Window, render as r } from "proton-native";
-import { Example } from "./app.js";
 
 class HotApp extends Component {
 	render() {

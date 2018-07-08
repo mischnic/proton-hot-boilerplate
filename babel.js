@@ -92,11 +92,11 @@ const ID = (function() {
 		if (module.hot.data && module.hot.data.proxy) {
 			// hot reload
 			const mountedInstances = module.hot.data.proxy.update(Wrapper);
-			const forceUpdate = getForceUpdate(React);
+			const forceUpdate = PROXY.getForceUpdate(React);
 			mountedInstances.forEach(forceUpdate);
 		} else {
 			// initial render
-			proxy = createProxy(Wrapper);
+			proxy = PROXY.createProxy(Wrapper);
 			RENDER(React.createElement(proxy.get()));
 		}
 
@@ -118,7 +118,7 @@ const ID = (function() {
 	const PROXY_IMPORT = Symbol("react-proxy imports");
 	const KEEP_RENDER = Symbol("Keep render");
 
-	const ensureHotWrapper = file => {
+	const ensureWrappers = file => {
 		// insert the proxy import
 		if (!file[PROXY_IMPORT]) {
 			file[PROXY_IMPORT] = file.path.scope.generateUidIdentifier("react_proxy");
@@ -393,7 +393,7 @@ const ID = (function() {
 
 						s.local = path.scope.generateUidIdentifierBasedOnNode(s.local);
 
-						ensureHotWrapper(file);
+						ensureWrappers(file);
 
 						proxies.push(
 							importProxyTemplate({
@@ -426,7 +426,7 @@ const ID = (function() {
 					}
 				}
 			},
-			CallExpression(path, opts) {
+			CallExpression(path, { file }) {
 				if (t.isIdentifier(path.node.callee) && !path.node[KEEP_RENDER]) {
 					// patch the proton-native.render call
 					const declaration = path.scope.getBinding(path.node.callee.name);
@@ -436,11 +436,14 @@ const ID = (function() {
 						declaration.path.parent.source.value.toLowerCase() === "proton-native" &&
 						declaration.path.node.imported.name === "render"
 					) {
+						ensureWrappers(file);
+
 						const render = path.node.callee.name;
 						path.replaceWith(
 							renderTemplate({
-								X: path.node.arguments[0],
-								RENDER: t.identifier(render)
+								PROXY: file[PROXY_IMPORT],
+								RENDER: t.identifier(render),
+								X: path.node.arguments[0]
 							})
 						);
 
