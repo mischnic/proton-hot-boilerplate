@@ -3,6 +3,6 @@
       "env",
       "stage-0",
       "react"
-    ]
-    // "plugins": ["./babel.js"]
+    ],
+    "plugins": ["../babel.js"]
 }
