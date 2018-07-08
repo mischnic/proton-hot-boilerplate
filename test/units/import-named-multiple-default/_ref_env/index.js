@@ -145,6 +145,4 @@ var HotApp = function (_Component) {
 	return HotApp;
 }(_React.Component);
 
-(0, _protonNative.render)(_React2.default.createElement(HotApp, null));
-
 _module_hot.run();

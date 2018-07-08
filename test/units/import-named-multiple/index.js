@@ -14,5 +14,3 @@ class HotApp extends Component {
 		);
 	}
 }
-
-render(<HotApp />);

@@ -114,6 +114,4 @@ class HotApp extends Component {
 	}
 }
 
-render(React.createElement(HotApp, null));
-
 _module_hot.run();

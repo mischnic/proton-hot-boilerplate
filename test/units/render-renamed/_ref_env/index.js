@@ -74,26 +74,6 @@ var Example = function () {
 	}
 }();
 
-var Test = function () {
-	if (_app.Test && _app.Test.___component) {
-		var proxy = _react_proxy.createProxy(_app.Test.___component);
-
-		_module_hot.accept(require.resolve("./app.js"), function () {
-			var x = require("./app.js")["Test"];
-
-			var mountedInstances = proxy.update(x.___component);
-
-			var forceUpdate = _react_proxy.getForceUpdate(_React2.default);
-
-			mountedInstances.forEach(forceUpdate);
-		});
-
-		return proxy.get();
-	} else {
-		return _app.Test;
-	}
-}();
-
 var HotApp = function (_Component) {
 	_inherits(HotApp, _Component);
 
@@ -112,8 +92,7 @@ var HotApp = function (_Component) {
 				_React2.default.createElement(
 					_protonNative.Window,
 					{ title: "Notes", size: { w: 500, h: 350 }, margined: true },
-					_React2.default.createElement(Example, null),
-					_React2.default.createElement(Test, null)
+					_React2.default.createElement(Example, null)
 				)
 			);
 		}
@@ -121,5 +100,46 @@ var HotApp = function (_Component) {
 
 	return HotApp;
 }(_React.Component);
+
+(function () {
+	var Wrapper = function (_React$Component) {
+		_inherits(Wrapper, _React$Component);
+
+		function Wrapper() {
+			_classCallCheck(this, Wrapper);
+
+			return _possibleConstructorReturn(this, (Wrapper.__proto__ || Object.getPrototypeOf(Wrapper)).apply(this, arguments));
+		}
+
+		_createClass(Wrapper, [{
+			key: "render",
+			value: function render() {
+				return _React2.default.createElement(HotApp, null);
+			}
+		}]);
+
+		return Wrapper;
+	}(_React2.default.Component);
+
+	if (module.hot) {
+		var proxy = void 0;
+
+		if (module.hot.data && module.hot.data.proxy) {
+			var mountedInstances = module.hot.data.proxy.update(Wrapper);
+			var forceUpdate = getForceUpdate(_React2.default);
+			mountedInstances.forEach(forceUpdate);
+		} else {
+			proxy = createProxy(Wrapper);
+			(0, _protonNative.render)(_React2.default.createElement(proxy.get()));
+		}
+
+		module.hot.accept();
+		module.hot.dispose(function (data) {
+			data.proxy = proxy || module.hot.data && module.hot.data.proxy;
+		});
+	} else {
+		(0, _protonNative.render)(_React2.default.createElement(HotApp, null));
+	}
+})();
 
 _module_hot.run();

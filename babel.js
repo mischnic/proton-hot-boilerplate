@@ -1,7 +1,3 @@
-const templateOptions = {
-	placeholderPattern: /^([A-Z0-9]+)([A-Z0-9_]+)$/
-};
-
 const isUpperCase = v => v[0] === v[0].toUpperCase();
 
 const shouldIgnoreFile = file =>
@@ -16,7 +12,7 @@ module.exports = function plugin(args) {
 	}
 	const { types: t, template } = args;
 
-	const headerTemplate = template(`const ID = require("react-proxy");`, templateOptions);
+	const headerTemplate = template(`const ID = require("react-proxy");`);
 	const shouldDoImport = /^\.?\.\//;
 
 	// @returns {
@@ -42,8 +38,7 @@ module.exports = function plugin(args) {
 	} else {
 		return IMPORTID;
 	}
-})();`,
-		templateOptions
+})();`
 	);
 
 	// Wrapper for module.hot to support multiple module.hot.accept calls for the same file
@@ -77,30 +72,51 @@ const ID = (function() {
 		};
 	}
 })();
-`,
-		templateOptions
+`
 	);
 
 	// Run the hot wrapper
-	const hotWrapperRunTemplate = template(`ID.run();`, templateOptions);
+	const hotWrapperRunTemplate = template(`ID.run();`);
 
-	/* 	
 	const renderTemplate = template(
-			`(function(){
-	render(COMPONENT);
-	if(module.hot){
-		module.hot.accept();
+		`(() => {
+	class Wrapper extends React.Component {
+		render() {
+			return X;
+		}
 	}
 
-	})();`,
-			templateOptions
-		);
-	*/
+	if (module.hot) {
+		let proxy;
+
+		if (module.hot.data && module.hot.data.proxy) {
+			// hot reload
+			const mountedInstances = module.hot.data.proxy.update(Wrapper);
+			const forceUpdate = getForceUpdate(React);
+			mountedInstances.forEach(forceUpdate);
+		} else {
+			// initial render
+			proxy = createProxy(Wrapper);
+			RENDER(React.createElement(proxy.get()));
+		}
+
+		// Please reload me
+		module.hot.accept();
+		// Make proxy available in updated module
+		module.hot.dispose(data => {
+			data.proxy = proxy || (module.hot.data && module.hot.data.proxy);
+		});
+	} else {
+		RENDER(X);
+	}
+})();`
+	);
 
 	// Keys to keep information on file object
 	const MODULE_HOT = Symbol("Wrapper(module.hot)");
 	const REACT_COMPS = Symbol("React Components");
 	const PROXY_IMPORT = Symbol("react-proxy imports");
+	const KEEP_RENDER = Symbol("Keep render");
 
 	const ensureHotWrapper = file => {
 		// insert the proxy import
@@ -404,21 +420,37 @@ const ID = (function() {
 					file[REACT_COMPS] = [];
 				},
 				exit(path, { file }) {
-					// path.traverse({
-					// 	CallExpression(path, opts) {
-					// 		// patch the top-level render call
-					// 		if (path.node.callee.name === "render") {
-					// 			path.replaceWith(
-					// 				renderTemplate({ COMPONENT: path.node.arguments[0] })
-					// 			);
-					// 			path.stop();
-					// 		}
-					// 	}
-					// });
-
 					// run the module.hot wrapper
 					if (file[MODULE_HOT]) {
 						path.node.body.push(hotWrapperRunTemplate({ ID: file[MODULE_HOT] }));
+					}
+				}
+			},
+			CallExpression(path, opts) {
+				if (t.isIdentifier(path.node.callee) && !path.node[KEEP_RENDER]) {
+					// patch the proton-native.render call
+					const declaration = path.scope.getBinding(path.node.callee.name);
+					if (
+						declaration &&
+						t.isImportDeclaration(declaration.path.parent) &&
+						declaration.path.parent.source.value.toLowerCase() === "proton-native" &&
+						declaration.path.node.imported.name === "render"
+					) {
+						const render = path.node.callee.name;
+						path.replaceWith(
+							renderTemplate({
+								X: path.node.arguments[0],
+								RENDER: t.identifier(render)
+							})
+						);
+
+						// prevent infinite recursion
+						path.node.callee.body.body[1].consequent.body[1].alternate.body[1].expression[
+							KEEP_RENDER
+						] = true;
+						path.node.callee.body.body[1].alternate.body[0].expression[
+							KEEP_RENDER
+						] = true;
 					}
 				}
 			},
