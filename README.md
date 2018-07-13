@@ -9,9 +9,15 @@ yarn # or npm i
 yarn dev # or npm run dev
 ```
 
+You can disable hot reloading on a per-file basis:
+```js
+// @proton-hot-disable
+import ...
+```
+
 ## Caveats/Issues
 
 - **WIP**: Hot reloading `index.js` (the main script) doesn't work
-- Higher order components aren't hot reloaded (yet?)
+- Higher order components aren't hot reloaded
 
 **Nevertheless, please open an issue with any code that isn't working as expected (e.g. not working at all (crashing) or not hot reloading). There *should* be a test for every edge-case regarding component importing and exporting.**

@@ -10,6 +10,8 @@ const shouldIgnoreFile = file =>
 		.join("/")
 		.match(/node_modules\//);
 
+const skipPattern = /^\s*@proton-hot-disable/;
+
 module.exports = function plugin(args) {
 	if (this && this.callback) {
 		throw new Error();
@@ -399,6 +401,16 @@ const ID = (function() {
 				enter(path, { file }) {
 					if (shouldIgnoreFile(file.opts.filename)) {
 						path.skip();
+						return;
+					}
+					let skip = false;
+					path.parent.comments.forEach(v => {
+						if (v.type === "CommentLine" && skipPattern.test(v.value) && v.start == 0) {
+							path.skip();
+							skip = true;
+						}
+					});
+					if (skip) {
 						return;
 					}
 					file[REACT_COMPS] = [];

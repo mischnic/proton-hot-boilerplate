@@ -146,6 +146,9 @@ console.log("# import");
 	"import-named-multiple-default"
 ].forEach(t => unit(t) || unit(t, true));
 
+console.log("# miscellaneous");
+unit("disabled-comment");
+
 console.log(`\n1..${i}`);
 console.log(`\n# tests ${i}`);
 if (i - failed) console.log(`# pass ${i - failed}`);
