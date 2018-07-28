@@ -17,12 +17,6 @@ import ...
 
 ## Caveats/Issues
 
-- **WIP**: Hot reloading `index.js` (the main script) doesn't work
 - Higher order components aren't hot reloaded
 
 **Nevertheless, please open an issue with any code that isn't working as expected (e.g. not working at all (crashing) or not hot reloading). There *should* be a test for every edge-case regarding component importing and exporting.**
-
-## Roadmap
-
-- Create a seperate package for the babel plugin
-- Integrate with create-proton-app?
