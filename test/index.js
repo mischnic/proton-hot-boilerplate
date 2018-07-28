@@ -149,6 +149,9 @@ console.log("# import");
 console.log("# miscellaneous");
 unit("disabled-comment");
 
+console.log("# render");
+["render", "render-renamed"].forEach(t => unit(t) || unit(t, true));
+
 console.log(`\n1..${i}`);
 console.log(`\n# tests ${i}`);
 if (i - failed) console.log(`# pass ${i - failed}`);

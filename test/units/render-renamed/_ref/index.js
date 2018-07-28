@@ -35,28 +35,7 @@ const _module_hot = function () {
 const _react_proxy = require("react-proxy");
 
 import React, { Component } from "React";
-import { App, Window, render } from "proton-native";
-import _Example from "./app.js";
-
-const Example = function () {
-	if (_Example && _Example.___component) {
-		const proxy = _react_proxy.createProxy(_Example.___component);
-
-		_module_hot.accept(require.resolve("./app.js"), function () {
-			const x = require("./app.js")["default"];
-
-			const mountedInstances = proxy.update(x.___component);
-
-			const forceUpdate = _react_proxy.getForceUpdate(React);
-
-			mountedInstances.forEach(forceUpdate);
-		});
-
-		return proxy.get();
-	} else {
-		return _Example;
-	}
-}();
+import { App, Window, render as r } from "proton-native";
 
 class HotApp extends Component {
 	render() {
@@ -71,5 +50,33 @@ class HotApp extends Component {
 		);
 	}
 }
+
+(() => {
+	class Wrapper extends React.Component {
+		render() {
+			return React.createElement(HotApp, null);
+		}
+
+	}
+
+	if (module.hot) {
+		let proxy;
+
+		if (module.hot.data && module.hot.data.proxy) {
+			const mountedInstances = module.hot.data.proxy.update(Wrapper);
+			mountedInstances.forEach(i => i.forceUpdate());
+		} else {
+			proxy = _react_proxy.createProxy(Wrapper);
+			r(React.createElement(proxy.get()));
+		}
+
+		module.hot.accept();
+		module.hot.dispose(data => {
+			data.proxy = proxy || module.hot.data && module.hot.data.proxy;
+		});
+	} else {
+		r(React.createElement(HotApp, null));
+	}
+})();
 
 _module_hot.run();

@@ -1,6 +1,5 @@
 import React, { Component } from "React";
-import { App, Window, render } from "proton-native";
-import { Example } from "./app.js";
+import { App, Window, render as r } from "proton-native";
 
 class HotApp extends Component {
 	render() {
@@ -13,3 +12,5 @@ class HotApp extends Component {
 		);
 	}
 }
+
+r(<HotApp />);
